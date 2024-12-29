@@ -1,0 +1,19 @@
+[project]
+name = "clai"
+version = "0.1.0"
+description = "A CLI tool that facilitates decision-making, automation, and problem-solving through the use of LLM AI."
+authors = [
+    {name = "Jelle Smet", email = "development@smetj.net"},
+]
+
+dependencies = [
+    "openai==1.58.1",
+    "tiktoken==0.8.0",
+]
+
+[project.scripts]
+clai = "clai:main"
+
+[project.urls]
+homepage = "https://github.com/smetj/clai"
+repository = "https://github.com/smetj/clai"
