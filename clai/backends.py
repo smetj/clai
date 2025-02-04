@@ -27,10 +27,10 @@ def azure_openai(
     token,
     max_tokens,
     model,
-    temperature,
     system,
     prompt,
     stdin,
+    temperature=0,
     base_model=None,
 ):
     client = AzureOpenAI(
@@ -66,7 +66,7 @@ def azure_openai(
     return response.choices[0].message.content
 
 
-def openai(token, max_tokens, model, temperature, system, prompt, stdin):
+def openai(token, max_tokens, model, system, prompt, stdin, temperature=0):
     client = OpenAI(
         api_key=token,
     )
