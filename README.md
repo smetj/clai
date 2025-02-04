@@ -25,15 +25,15 @@ python -m pip install .
 
 ## Configuration
 
-### config file
+### Config file
 
 The CLI requires a config file in which the various LLM backends are
 configured. The location of the config file can be set through `--config`.
 There is no default location for the config file, so you will have to
-explicitly set it. You can avoid the need of having to define it by setting
-the location of the config file to in environment variable `CLAI_CONFIG`.
+explicitly set it. You can avoid the need to define it by setting
+the location of the config file in the environment variable `CLAI_CONFIG`.
 
-The config file has following format:
+The config file has the following format:
 
 ```yaml
 backends:
@@ -42,7 +42,7 @@ backends:
       token: ${{CLAI_OPENAI_TOKEN}}
       max_tokens: 4096
       model: gpt-4o
-      system: You are a helpful assistent.
+      system: You are a helpful assistant.
 
   azure_openai:
     default:
@@ -51,13 +51,13 @@ backends:
       api_version: "2024-10-21"
       model: "gpt-4o"
       max_tokens: 4096
-      system: You are a helpful assistent.
+      system: You are a helpful assistant.
 ```
 
-### backends
+### Backends
 
-The config file contains the connection details towards various backends.
-Multiple instances per backend are possible. and can be referred to using the
+The config file contains the connection details for various backends.
+Multiple instances per backend are possible and can be referred to using the
 `--backend` and `--instance` parameters:
 
 ```bash
@@ -67,10 +67,10 @@ clai --prompt "Greetings!" --backend openai --instance default
 Both `--backend` and `--instance` can be set by assigning a value to
 environment variables `CLAI_BACKEND` and `CLAI_INSTANCE` respectively.
 
-See backends section below for a detailed explanation about the various
+See the backends section below for a detailed explanation about the various
 parameters per backend.
 
-### variable substitution
+### Variable substitution
 
 Values in the configuration file, such as `${{ENV_VAR}}`, will be replaced
 with the corresponding environment variable. This approach helps avoid
@@ -79,7 +79,7 @@ this use.
 
 ## Usage
 
-The CLI has a number of conveniences builtin.
+The CLI has a number of conveniences built-in.
 
 ### STDIN reading
 
@@ -111,7 +111,6 @@ $ echo $?
 Enabling `--noprose` is useful to make sure the LLM does not add any unwanted
 explanation or formatting to the response:
 
-
 ```
 cat test.md | clai --prompt "Convert this markdown content to asciidoc."
 = Title
@@ -133,8 +132,7 @@ The following parameters are supported:
 - `max_tokens`: The maximum number of tokens the prompt is allowed to generate
 - `model`: The model to use
 - `system`: The system prompt
-- `temperature`: The prompt temperature
-
+- `temperature`: The prompt temperature (default 0)
 
 ### Azure-OpenAI
 
@@ -144,10 +142,10 @@ https://learn.microsoft.com/en-us/azure/ai-services/openai/
 - `endpoint`: The endpoint to connect to
 - `api_version`: The API version to use
 - `model`: The model to use
-- `base_model`(Default: `None`): In order to tokenize the input we need to
+- `base_model` (Default: `None`): In order to tokenize the input, we need the
   model name to tokenize the input properly. When `model` has a non-standard
-  name, its not possible to infer actual OpenAI model on which this is
+  name, it's not possible to infer the actual OpenAI model on which this is
   based.
 - `max_tokens`: The maximum number of tokens the prompt is allowed to generate
 - `system`: The system prompt
-- `temperature`: The prompt temperature
+- `temperature`: The prompt temperature (default: 0)
