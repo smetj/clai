@@ -17,7 +17,7 @@ def read_config(filename):
     Reads the config file `filename`
     """
 
-    with open(filename) as filename_fh:
+    with open(os.path.expanduser(filename)) as filename_fh:
         return yaml.safe_load(filename_fh)
 
 
