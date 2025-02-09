@@ -2,13 +2,14 @@
 
 import importlib
 import sys
-
 from clai.prompts import BOOL_PROMPT, CLOSING_PROMPT, NOPROSE_PROMPT
 from clai.tools import (
     get_backend_instance_config,
     parse_arguments,
     read_config,
     read_stdin,
+    cleanup,
+    get_exit_code,
 )
 
 
@@ -26,31 +27,55 @@ def process_prompt(
         backend_config: The `backend` function variables.
     """
     prompts = []
+    response_format = None
 
     if bool_prompt:
-        prompts.append(BOOL_PROMPT)
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "true_false",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "answer": {
+                            "type": "boolean",
+                        },
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["answer", "reason"],
+                    "additionalProperties": False,
+                },
+                "strict": True,
+            },
+        }
+        prompts.append(cleanup(BOOL_PROMPT))
 
     elif no_prose_prompt:
-        prompts.append(NOPROSE_PROMPT)
+        prompts.append(cleanup(NOPROSE_PROMPT))
 
-    # prompts.append(CLOSING_PROMPT)
+    prompts.append(cleanup(CLOSING_PROMPT))
     prompts.append(prompt)
 
     backend_func = getattr(importlib.import_module("clai.backends"), backend)
 
     try:
         response = backend_func(
-            **backend_config | {"prompts": prompts, "stdin": read_stdin}
+            **backend_config
+            | {
+                "prompts": prompts,
+                "stdin": read_stdin,
+                "response_format": response_format,
+            }
         )
     except Exception as err:
+        raise
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)
         sys.exit(1)
 
     print(response, file=sys.stdout)
 
     if bool_prompt:
-        exit_codes = {"true": 0, "false": 1, "inconclusive": 2}
-        sys.exit(exit_codes.get(response, 3))
+        sys.exit(get_exit_code(response))
 
 
 def main():
@@ -69,6 +94,7 @@ def main():
             backend_config=backend_config,
         )
     except Exception as err:
+        raise
         print(f"Failed to execute command. Reason: {err}")
         sys.exit(1)
 

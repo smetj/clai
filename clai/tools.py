@@ -6,10 +6,25 @@ import argparse
 import os
 import re
 import sys
-
+from textwrap import dedent
 import yaml
 
 from clai.backends import SUPPORTED_BACKENDS
+import json
+
+
+def cleanup(text):
+
+    return dedent(text).replace("\n", " ")
+
+
+def get_exit_code(response):
+
+    json_response = json.loads(response)
+    if json_response["answer"]:
+        return 0
+    else:
+        return 1
 
 
 def read_config(filename):

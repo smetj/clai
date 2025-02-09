@@ -3,16 +3,16 @@
 A CLI tool for interacting with remote LLM APIs with support for multiple
 backends and a flexible configuration system.
 
-```
+```bash
 $ echo "red and yellow" | clai --prompt "Does mixing these colors yield orange?"
 Yes, mixing red and yellow typically yields orange.
 ```
 
-```
-$ echo "red and black" | clai --bool --prompt "Does mixing these colors yield orange?"
-false
-echo $?
-1
+```bash
+$ echo "red and yellow" | clai --bool --prompt "Mixing these colors yields orange."                
+{"answer":true,"reason":"Mixing red and yellow colors indeed yields orange, which is a basic principle of color theory. The context provided is sufficient as it directly states the colors involved an the resulting color."}
+$ echo $?
+0
 ```
 
 ## Installation
@@ -91,19 +91,25 @@ cat script.py | clai --prompt "Explain why this code produces the following erro
 
 ### bool
 
-Enabling `--bool` ensures that the LLM responds with one of three values:
-`true`, `false`, or `undetermined`, along with the corresponding exit codes
-of 0, 1, and 2, respectively.
+Enabling `--bool` ensures that the LLM returns a JSON formatted response that
+includes a boolean `answer` of either `true` or `false` and the `reason` for
+that conclusion. Additionally, the exit code will be `0` for true and `1` for
+false.
 
-```
-$ echo 'Mixing red and yellow gives orange' | clai --bool --prompt "Is this true?"
-true
-$ echo $?
-0
-$ echo 'Mixing red and yellow gives blue' | clai --bool --prompt "Is this true?"
-false
+**false example:**
+```bash
+$ echo "red and blue" | clai --bool --prompt "Mixing these colors yields orange."
+{"answer":false,"reason":"Mixing red and blue yields purple, not orange. The context was sufficient as it clearly stated the colors to be mixed."}
 $ echo $?
 1
+```
+
+**true example:**
+```bash
+$ echo "red and yellow" | clai --bool --prompt "Mixing these colors yields orange."                
+{"answer":true,"reason":"Mixing red and yellow colors indeed yields orange, which is a basic principle of color theory. The context provided is sufficient as it directly states the colors involved an the resulting color."}
+$ echo $?
+0
 ```
 
 ### no-prose

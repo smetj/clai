@@ -61,6 +61,7 @@ def azure_openai(
     stdin,
     temperature=0,
     base_model=None,
+    response_format=None,
 ):
     client = AzureOpenAI(
         api_key=token,
@@ -69,7 +70,6 @@ def azure_openai(
     )
 
     messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
-    print(messages)
 
     response = client.chat.completions.create(
         messages=messages, model=model, temperature=temperature
@@ -78,17 +78,26 @@ def azure_openai(
 
 
 def openai(
-    token, max_tokens, model, system, prompts, stdin, temperature=0, base_model=None
+    token,
+    max_tokens,
+    model,
+    system,
+    prompts,
+    stdin,
+    temperature=0,
+    base_model=None,
+    response_format=None,
 ):
-    client = OpenAI(
-        api_key=token,
-    )
+
+    client = OpenAI(api_key=token)
 
     messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
-    print(messages)
 
     response = client.chat.completions.create(
-        messages=messages, model=model, temperature=temperature
+        messages=messages,
+        model=model,
+        temperature=temperature,
+        response_format=response_format,
     )
 
     return response.choices[0].message.content
