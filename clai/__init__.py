@@ -33,14 +33,14 @@ def process_prompt(
     elif no_prose_prompt:
         prompts.append(NOPROSE_PROMPT)
 
+    # prompts.append(CLOSING_PROMPT)
     prompts.append(prompt)
-    prompts.append(CLOSING_PROMPT)
 
     backend_func = getattr(importlib.import_module("clai.backends"), backend)
 
     try:
         response = backend_func(
-            **backend_config | {"prompt": " ".join(prompts), "stdin": read_stdin}
+            **backend_config | {"prompts": prompts, "stdin": read_stdin}
         )
     except Exception as err:
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)

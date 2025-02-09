@@ -53,7 +53,7 @@ def read_stdin():
     """Reads input from STDIN if available."""
     if not sys.stdin.isatty():
         for item in sys.stdin.readlines():
-            yield item
+            yield item.lstrip().rstrip()
 
 
 def parse_arguments():

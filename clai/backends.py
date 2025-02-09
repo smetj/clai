@@ -21,6 +21,35 @@ class ValidateTokenLength:
             raise Exception(f"Total input exceeds {self.total_tokens} tokens.")
 
 
+def build_messages(max_tokens, model, system, prompts, stdin, base_model=None):
+
+    messages = []
+
+    if base_model:
+        vtl = ValidateTokenLength(model=base_model, max_tokens=max_tokens)
+    else:
+        vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
+
+    vtl.add(system)
+    messages.append({"role": "system", "content": system.lstrip().rstrip()})
+
+    for prompt in prompts:
+        vtl.add(prompt)
+        messages.append({"role": "user", "content": prompt.lstrip().rstrip()})
+
+    stdin_content = []
+    for line in stdin():
+        vtl.add(line)
+        stdin_content.append(line.lstrip().rstrip())
+
+    if len(stdin_content) > 0:
+        messages.append(
+            {"role": "user", "content": "".join(stdin_content)},
+        )
+
+    return messages
+
+
 def azure_openai(
     endpoint,
     api_version,
@@ -28,7 +57,7 @@ def azure_openai(
     max_tokens,
     model,
     system,
-    prompt,
+    prompts,
     stdin,
     temperature=0,
     base_model=None,
@@ -39,26 +68,8 @@ def azure_openai(
         api_version=api_version,
     )
 
-    if base_model:
-        vtl = ValidateTokenLength(model=base_model, max_tokens=max_tokens)
-    else:
-        vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
-    vtl.add(system)
-
-    user = []
-    vtl.add(prompt)
-    user.append({"role": "user", "content": prompt})
-
-    for line in stdin():
-        vtl.add(line)
-        user.append({"role": "user", "content": line})
-
-    messages = [
-        {
-            "role": "system",
-            "content": system,
-        }
-    ] + user
+    messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
+    print(messages)
 
     response = client.chat.completions.create(
         messages=messages, model=model, temperature=temperature
@@ -66,30 +77,18 @@ def azure_openai(
     return response.choices[0].message.content
 
 
-def openai(token, max_tokens, model, system, prompt, stdin, temperature=0):
+def openai(
+    token, max_tokens, model, system, prompts, stdin, temperature=0, base_model=None
+):
     client = OpenAI(
         api_key=token,
     )
 
-    vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
-    vtl.add(system)
-
-    user = []
-    vtl.add(prompt)
-    user.append({"role": "user", "content": prompt})
-
-    for line in stdin():
-        vtl.add(line)
-        user.append({"role": "user", "content": line})
-
-    messages = [
-        {
-            "role": "system",
-            "content": system,
-        }
-    ] + user
+    messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
+    print(messages)
 
     response = client.chat.completions.create(
         messages=messages, model=model, temperature=temperature
     )
+
     return response.choices[0].message.content
