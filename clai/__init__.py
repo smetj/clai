@@ -68,7 +68,6 @@ def process_prompt(
             }
         )
     except Exception as err:
-        raise
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)
         sys.exit(1)
 
@@ -94,7 +93,6 @@ def main():
             backend_config=backend_config,
         )
     except Exception as err:
-        raise
         print(f"Failed to execute command. Reason: {err}")
         sys.exit(1)
 
