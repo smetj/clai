@@ -9,17 +9,15 @@ import sys
 from textwrap import dedent
 import yaml
 
-from clai.backends import SUPPORTED_BACKENDS
+from clai.backend import SUPPORTED_BACKENDS
 import json
 
 
 def cleanup(text):
-
     return dedent(text).replace("\n", " ")
 
 
 def get_exit_code(response):
-
     json_response = json.loads(response)
     if json_response["answer"]:
         return 0
@@ -107,11 +105,6 @@ def parse_arguments():
         help="Forces the llm to answer with `yes`, `no` or `inconclusive` whilst exiting with a corresponding exit code 0, 1, 2 respectively.",
     )
     main.add_argument(
-        "--no-prose",
-        action="store_true",
-        help="Forces the llm to only return what is asked without any further prose.",
-    )
-    main.add_argument(
         "--config",
         type=str,
         required=True,
@@ -134,6 +127,11 @@ def parse_arguments():
         action=EnvDefault,
         envvar="CLAI_INSTANCE",
         help="The backend instance to select from `config`.",
+    )
+    main.add_argument(
+        "--debug",
+        action="store_true",
+        help="Shows debugging output",
     )
 
     return main.parse_args()
