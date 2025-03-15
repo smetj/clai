@@ -30,7 +30,13 @@ def process_prompt(
 
     try:
         response = backend_func(
-            **backend_config | {"prompts": prompts, "stdin": read_stdin, "debug": debug}
+            **backend_config
+            | {
+                "prompts": prompts,
+                "stdin": read_stdin,
+                "debug": debug,
+                "bool_prompt": bool_prompt,
+            }
         )
     except Exception as err:
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)
@@ -57,6 +63,7 @@ def main():
             backend=args.backend,
             backend_config=backend_config,
         )
+
     except Exception as err:
         print(f"Failed to execute command. Reason: {err}")
         sys.exit(1)

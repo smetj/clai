@@ -4,7 +4,12 @@
 
 import tiktoken
 from openai import AzureOpenAI
-from clai.backend.openai import ValidateTokenLength, build_messages, RESPONSE_FORMAT
+from clai.backend.openai import (
+    ValidateTokenLength,
+    build_messages,
+    RESPONSE_FORMAT,
+    BOOL_PROMPT,
+)
 
 
 def prompt(
@@ -26,6 +31,12 @@ def prompt(
         azure_endpoint=endpoint,
         api_version=api_version,
     )
+
+    if bool_prompt:
+        response_format = RESPONSE_FORMAT
+        prompts.append(BOOL_PROMPT)
+    else:
+        response_format = None
 
     if base_model is None:
         messages = build_messages(max_tokens, model, system, prompts, stdin)

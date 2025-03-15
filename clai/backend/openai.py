@@ -5,6 +5,9 @@
 import tiktoken
 from openai import OpenAI
 from clai.prompts import BOOL_PROMPT
+from clai.backend.openai import (
+    BOOL_PROMPT,
+)
 
 RESPONSE_FORMAT = {
     "type": "json_schema",
@@ -78,14 +81,12 @@ def prompt(
     client = OpenAI(api_key=token)
 
     if bool_prompt:
-        prompts.append(BOOL_PROMPT)
-
-    messages = build_messages(max_tokens, model, system, prompts, stdin)
-
-    if bool_prompt:
         response_format = RESPONSE_FORMAT
+        prompts.append(BOOL_PROMPT)
     else:
         response_format = None
+
+    messages = build_messages(max_tokens, model, system, prompts, stdin)
 
     if debug:
         print(messages)
