@@ -9,7 +9,8 @@ authors = [
 dependencies = [
     "openai>=1.58.1",
     "tiktoken>=0.8.0",
-    "pyyaml>=6.0.2"
+    "pyyaml>=6.0.2",
+    "mistralai>=1.5.1"
 ]
 
 [project.scripts]
