@@ -8,8 +8,15 @@ from clai.backend.openai import (
     ValidateTokenLength,
     build_messages,
     RESPONSE_FORMAT,
-    BOOL_PROMPT,
 )
+from clai.prompts import AZURE_BOOL_PROMPT
+
+from pydantic import BaseModel
+
+
+class BoolResponseModel(BaseModel):
+    reason: str
+    answer: bool
 
 
 def prompt(
@@ -32,26 +39,30 @@ def prompt(
         api_version=api_version,
     )
 
-    if bool_prompt:
-        response_format = RESPONSE_FORMAT
-        prompts.append(BOOL_PROMPT)
-    else:
-        response_format = None
-
     if base_model is None:
-        messages = build_messages(max_tokens, model, system, prompts, stdin)
+        token_model = model
     else:
-        messages = build_messages(max_tokens, base_model, system, prompts, stdin)
+        token_model = base_model
 
     if bool_prompt:
-        response_format = RESPONSE_FORMAT
-    else:
-        response_format = None
+        system = AZURE_BOOL_PROMPT
+
+    messages = build_messages(max_tokens, token_model, system, prompts, stdin)
 
     if debug:
         print(messages)
 
-    response = client.chat.completions.create(
-        messages=messages, model=model, temperature=temperature
-    )
+    if bool_prompt:
+        response = client.chat.completions.create(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+            response_format={"type": "json_object"},
+        )
+    else:
+        response = client.chat.completions.create(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+        )
     return response.choices[0].message.content

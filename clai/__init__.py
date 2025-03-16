@@ -42,10 +42,13 @@ def process_prompt(
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)
         sys.exit(1)
 
-    print(response, file=sys.stdout)
-
     if bool_prompt:
-        sys.exit(get_exit_code(response))
+        exit_code = get_exit_code(response)
+    else:
+        exit_code = 0
+
+    print(response, file=sys.stdout)
+    sys.exit(exit_code)
 
 
 def main():
