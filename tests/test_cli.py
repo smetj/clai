@@ -73,3 +73,11 @@ def test_mistral_bool():
     )
 
     assert json.loads(result["stdout"])["answer"] is True
+
+
+def test_pipe_stdin():
+    result = execute_command(
+        'echo "black and white" | clai --backend mistral --prompt "mixing these colors yields grey." --bool'
+    )
+
+    assert json.loads(result["stdout"])["answer"] is True
