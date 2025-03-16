@@ -82,7 +82,7 @@ def prompt(
 
     if bool_prompt:
         response_format = RESPONSE_FORMAT
-        prompts.append(BOOL_PROMPT)
+        system = BOOL_PROMPT
     else:
         response_format = None
 
