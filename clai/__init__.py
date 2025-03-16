@@ -2,7 +2,6 @@
 
 import importlib
 import sys
-from clai.prompts import BOOL_PROMPT, CLOSING_PROMPT, NOPROSE_PROMPT
 from clai.tools import (
     get_backend_instance_config,
     parse_arguments,
@@ -14,7 +13,7 @@ from clai.tools import (
 
 
 def process_prompt(
-    prompt: str, bool_prompt: bool, no_prose_prompt, backend, backend_config
+    prompt: str, bool_prompt: bool, debug: bool, backend, backend_config
 ) -> None:
     """
     Main function to execute the prompt.
@@ -22,41 +21,12 @@ def process_prompt(
     Args:
         prompt: The user provided prompt for the LLM to process.
         bool_prompt: Append `BOOL_PROMPT` content to `prompt`.
-        no_prose_prompt: Append `NOPROSE_PROMPT` content to `prompt`.
         backend: The LLM backend function name to import and execute.
         backend_config: The `backend` function variables.
     """
-    prompts = []
-    response_format = None
+    prompts = [prompt]
 
-    if bool_prompt:
-        response_format = {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "true_false",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "answer": {
-                            "type": "boolean",
-                        },
-                        "reason": {"type": "string"},
-                    },
-                    "required": ["answer", "reason"],
-                    "additionalProperties": False,
-                },
-                "strict": True,
-            },
-        }
-        prompts.append(cleanup(BOOL_PROMPT))
-
-    elif no_prose_prompt:
-        prompts.append(cleanup(NOPROSE_PROMPT))
-
-    prompts.append(cleanup(CLOSING_PROMPT))
-    prompts.append(prompt)
-
-    backend_func = getattr(importlib.import_module("clai.backends"), backend)
+    backend_func = importlib.import_module(f"clai.backend.{backend}").prompt
 
     try:
         response = backend_func(
@@ -64,17 +34,21 @@ def process_prompt(
             | {
                 "prompts": prompts,
                 "stdin": read_stdin,
-                "response_format": response_format,
+                "debug": debug,
+                "bool_prompt": bool_prompt,
             }
         )
     except Exception as err:
         print(f"Failed to process prompt. Reason: f{err}", file=sys.stderr)
         sys.exit(1)
 
-    print(response, file=sys.stdout)
-
     if bool_prompt:
-        sys.exit(get_exit_code(response))
+        exit_code = get_exit_code(response)
+    else:
+        exit_code = 0
+
+    print(response, file=sys.stdout)
+    sys.exit(exit_code)
 
 
 def main():
@@ -88,10 +62,11 @@ def main():
         process_prompt(
             prompt=args.prompt,
             bool_prompt=args.bool,
-            no_prose_prompt=args.no_prose,
+            debug=args.debug,
             backend=args.backend,
             backend_config=backend_config,
         )
+
     except Exception as err:
         print(f"Failed to execute command. Reason: {err}")
         sys.exit(1)

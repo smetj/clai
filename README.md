@@ -52,6 +52,13 @@ backends:
       model: "gpt-4o"
       max_tokens: 4096
       system: You are a helpful assistant.
+
+  mistral:
+    default:
+      token: ${{MISTRAL_OPENAI_TOKEN}}
+      max_tokens: 4096
+      model: mistral-small-latest
+      system: You are a helpful assistant.
 ```
 
 ### Backends
@@ -112,20 +119,6 @@ $ echo $?
 0
 ```
 
-### no-prose
-
-Enabling `--noprose` is useful to make sure the LLM does not add any unwanted
-explanation or formatting to the response:
-
-```
-cat test.md | clai --prompt "Convert this markdown content to asciidoc."
-= Title
-
-== Chapter 1
-
-This is chapter 1
-```
-
 ## Backends
 
 ### OpenAI
@@ -155,3 +148,18 @@ https://learn.microsoft.com/en-us/azure/ai-services/openai/
 - `max_tokens`: The maximum number of tokens the prompt is allowed to generate
 - `system`: The system prompt
 - `temperature`: The prompt temperature (default: 0)
+
+### Mistral
+
+https://mistral.ai/
+
+The following parameters are supported:
+
+- `token`: The Mistral API token
+- `max_tokens`: The maximum number of tokens the prompt is allowed to
+  generate. (CAVEAT: The token calculation is not accurate since there no
+  equivalent for tiktoken which allows to tokenize locally without external
+  dependencies)
+- `model`: The model to use
+- `system`: The system prompt
+- `temperature`: The prompt temperature (default 0)

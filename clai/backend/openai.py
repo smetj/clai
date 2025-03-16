@@ -3,9 +3,30 @@
 #
 
 import tiktoken
-from openai import AzureOpenAI, OpenAI
+from openai import OpenAI
+from clai.prompts import BOOL_PROMPT
+from clai.backend.openai import (
+    BOOL_PROMPT,
+)
 
-SUPPORTED_BACKENDS = ["azure_openai", "openai"]
+RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "true_false",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "boolean",
+                },
+                "reason": {"type": "string"},
+            },
+            "required": ["answer", "reason"],
+            "additionalProperties": False,
+        },
+        "strict": True,
+    },
+}
 
 
 class ValidateTokenLength:
@@ -21,14 +42,10 @@ class ValidateTokenLength:
             raise Exception(f"Total input exceeds {self.total_tokens} tokens.")
 
 
-def build_messages(max_tokens, model, system, prompts, stdin, base_model=None):
-
+def build_messages(max_tokens, model, system, prompts, stdin):
     messages = []
 
-    if base_model:
-        vtl = ValidateTokenLength(model=base_model, max_tokens=max_tokens)
-    else:
-        vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
+    vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
 
     vtl.add(system)
     messages.append({"role": "system", "content": system.lstrip().rstrip()})
@@ -50,9 +67,7 @@ def build_messages(max_tokens, model, system, prompts, stdin, base_model=None):
     return messages
 
 
-def azure_openai(
-    endpoint,
-    api_version,
+def prompt(
     token,
     max_tokens,
     model,
@@ -60,38 +75,21 @@ def azure_openai(
     prompts,
     stdin,
     temperature=0,
-    base_model=None,
-    response_format=None,
+    bool_prompt=False,
+    debug=False,
 ):
-    client = AzureOpenAI(
-        api_key=token,
-        azure_endpoint=endpoint,
-        api_version=api_version,
-    )
-
-    messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
-
-    response = client.chat.completions.create(
-        messages=messages, model=model, temperature=temperature
-    )
-    return response.choices[0].message.content
-
-
-def openai(
-    token,
-    max_tokens,
-    model,
-    system,
-    prompts,
-    stdin,
-    temperature=0,
-    base_model=None,
-    response_format=None,
-):
-
     client = OpenAI(api_key=token)
 
-    messages = build_messages(max_tokens, model, system, prompts, stdin, base_model)
+    if bool_prompt:
+        response_format = RESPONSE_FORMAT
+        system = BOOL_PROMPT
+    else:
+        response_format = None
+
+    messages = build_messages(max_tokens, model, system, prompts, stdin)
+
+    if debug:
+        print(messages)
 
     response = client.chat.completions.create(
         messages=messages,

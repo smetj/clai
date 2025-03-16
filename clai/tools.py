@@ -9,18 +9,43 @@ import sys
 from textwrap import dedent
 import yaml
 
-from clai.backends import SUPPORTED_BACKENDS
+from clai.backend import SUPPORTED_BACKENDS
 import json
+from jsonschema import validate
 
 
 def cleanup(text):
-
     return dedent(text).replace("\n", " ")
 
 
-def get_exit_code(response):
+def validate_bool_response(response):
+    try:
+        json_response = json.loads(response)
+        validate(
+            json_response,
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                    "reason": {"type": "string"},
+                    "answer": {"type": "boolean"},
+                },
+                "required": ["reason", "answer"],
+                "additionalProperties": False,
+            },
+        )
+    except Exception as err:
+        print(
+            "Invalid response format received. Does the model support structured output?"
+        )
+        sys.exit(3)
 
-    json_response = json.loads(response)
+    return json_response
+
+
+def get_exit_code(response):
+    json_response = validate_bool_response(response)
+
     if json_response["answer"]:
         return 0
     else:
@@ -107,11 +132,6 @@ def parse_arguments():
         help="Forces the llm to answer with `yes`, `no` or `inconclusive` whilst exiting with a corresponding exit code 0, 1, 2 respectively.",
     )
     main.add_argument(
-        "--no-prose",
-        action="store_true",
-        help="Forces the llm to only return what is asked without any further prose.",
-    )
-    main.add_argument(
         "--config",
         type=str,
         required=True,
@@ -134,6 +154,11 @@ def parse_arguments():
         action=EnvDefault,
         envvar="CLAI_INSTANCE",
         help="The backend instance to select from `config`.",
+    )
+    main.add_argument(
+        "--debug",
+        action="store_true",
+        help="Shows debugging output",
     )
 
     return main.parse_args()
