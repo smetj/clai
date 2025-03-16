@@ -55,7 +55,7 @@ backends:
 
   mistral:
     default:
-      token: ${{MISTRAL_OPENAI_TOKEN}}
+      token: ${{CLAI_MISTRAL_TOKEN}}
       max_tokens: 4096
       model: mistral-small-latest
       system: You are a helpful assistant.
