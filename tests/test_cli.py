@@ -1,5 +1,5 @@
-import subprocess
 import json
+import subprocess
 
 
 def execute_command(command):
@@ -81,3 +81,17 @@ def test_pipe_stdin():
     )
 
     assert json.loads(result["stdout"])["answer"] is True
+
+
+def test_pipe_stdin_no_prompt():
+    result = execute_command(
+        'echo "Mixing black and white yields grey." | clai --backend mistral --bool'
+    )
+
+    assert json.loads(result["stdout"])["answer"] is True
+
+
+def test_no_pipe_stdin_no_prompt():
+    result = execute_command("clai --backend mistral")
+    print(result)
+    assert result["returncode"] == 1

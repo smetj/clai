@@ -2,18 +2,13 @@
 
 import importlib
 import sys
-from clai.tools import (
-    get_backend_instance_config,
-    parse_arguments,
-    read_config,
-    read_stdin,
-    cleanup,
-    get_exit_code,
-)
+
+from clai.tools import (cleanup, get_backend_instance_config, get_exit_code,
+                        parse_arguments, read_config, read_stdin)
 
 
 def process_prompt(
-    prompt: str, bool_prompt: bool, debug: bool, backend, backend_config
+    prompt: str | None, bool_prompt: bool, debug: bool, backend, backend_config
 ) -> None:
     """
     Main function to execute the prompt.
@@ -24,7 +19,14 @@ def process_prompt(
         backend: The LLM backend function name to import and execute.
         backend_config: The `backend` function variables.
     """
-    prompts = [prompt]
+    prompts = []
+
+    if prompt is not None:
+        prompts = [prompt]
+    else:
+        if sys.stdin.isatty():
+            raise Exception("No prompt input to process from either --prompt or STDIN.")
+            sys.exit(1)
 
     backend_func = importlib.import_module(f"clai.backend.{backend}").prompt
 

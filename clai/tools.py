@@ -124,7 +124,6 @@ def parse_arguments():
         "--prompt",
         type=str,
         help="The LLM prompt to execute.",
-        required=True,
     )
     main.add_argument(
         "--bool",
