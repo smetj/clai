@@ -3,14 +3,15 @@
 #
 
 import argparse
+import json
 import os
 import re
 import sys
+from collections import namedtuple
 from textwrap import dedent
-import yaml
 
+import yaml
 from clai.backend import SUPPORTED_BACKENDS
-import json
 from jsonschema import validate
 
 
@@ -34,7 +35,7 @@ def validate_bool_response(response):
                 "additionalProperties": False,
             },
         )
-    except Exception as err:
+    except Exception as _:
         print(
             "Invalid response format received. Does the model support structured output?"
         )
@@ -62,6 +63,12 @@ def read_config(filename):
 
 
 def get_backend_instance_config(config, backend, instance):
+    def backend_config_factory(data):
+
+        nt = namedtuple("BackendConfig", data.keys())
+
+        return nt(**data)
+
     if backend not in SUPPORTED_BACKENDS:
         supported_backends = ", ".join(SUPPORTED_BACKENDS)
         raise Exception(
@@ -78,7 +85,7 @@ def get_backend_instance_config(config, backend, instance):
 
     backend_config = config["backends"][backend][instance]
     for key, value in backend_config.items():
-        env_var = re.match("^\$\{\{(.*)?\}\}$", str(value))
+        env_var = re.match(r"^\$\{\{(.*)?\}\}$", str(value))
         if env_var:
             if env_var.groups()[0] in os.environ:
                 backend_config[key] = os.environ[env_var.groups()[0]]
@@ -86,7 +93,7 @@ def get_backend_instance_config(config, backend, instance):
                 raise Exception(
                     f"Backend `{backend}` instance `{instance}` refers to a non-existing environment variable named `{env_var.groups()[0]}`."
                 )
-    return backend_config
+    return backend_config_factory(backend_config)
 
 
 def read_stdin():
@@ -94,6 +101,8 @@ def read_stdin():
     if not sys.stdin.isatty():
         for item in sys.stdin.readlines():
             yield item.lstrip().rstrip()
+    else:
+        return []
 
 
 def parse_arguments():
@@ -119,16 +128,6 @@ def parse_arguments():
 
     main = argparse.ArgumentParser(
         description="A CLI tool that facilitates decision-making, automation, and problem-solving through the use of LLM AI."
-    )
-    main.add_argument(
-        "--prompt",
-        type=str,
-        help="The LLM prompt to execute.",
-    )
-    main.add_argument(
-        "--bool",
-        action="store_true",
-        help="Forces the llm to answer with `yes`, `no` or `inconclusive` whilst exiting with a corresponding exit code 0, 1, 2 respectively.",
     )
     main.add_argument(
         "--config",
@@ -157,7 +156,53 @@ def parse_arguments():
     main.add_argument(
         "--debug",
         action="store_true",
-        help="Shows debugging output",
+        help="Prints the payload submitted to the backend API.",
+    )
+
+    subparsers = main.add_subparsers(dest="command", required=True)
+
+    # vanilla prompt
+    parser_prompt = subparsers.add_parser(
+        "prompt",
+        help="Generate a plain, unstructured prompt and return the LLM's raw response.",
+    )
+    parser_prompt.add_argument(
+        "prompt",
+        type=str,
+        nargs='?',
+        default="",
+        help="The LLM prompt to execute.",
+    )
+
+    # bool prompt
+    bool_prompt = subparsers.add_parser(
+        "bool",
+        help="Ask the LLM a true/false question and return an appropriate exit code (0 for True, 1 for False).",
+    )
+    bool_prompt.add_argument(
+        "prompt",
+        type=str,
+        nargs='?',
+        default="",
+        help="The LLM prompt to execute.",
+    )
+
+    # structured prompt
+    structured_prompt = subparsers.add_parser(
+        "structured",
+        help="Provide a prompt along with a JSON schema to receive a structured, schema-compliant response from the LLM.",
+    )
+    structured_prompt.add_argument(
+        "--prompt",
+        type=str,
+        nargs='?',
+        default="",
+        help="The LLM prompt to execute.",
+    )
+    structured_prompt.add_argument(
+        "--schema",
+        type=str,
+        help="The JSON schema to apply.",
     )
 
     return main.parse_args()
