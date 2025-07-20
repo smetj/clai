@@ -9,16 +9,15 @@ from clai.tools import get_exit_code
 from openai import AzureOpenAI
 from clai.backend.openai import RESPONSE_FORMAT
 
+
 class Client(BaseBackend):
 
     def __init__(self, endpoint, api_version, system, *args, **kwargs):
-        self.token_model=kwargs.pop("token_model", kwargs["model"])
+        self.token_model = kwargs.pop("token_model", kwargs["model"])
         self.system = system
         super().__init__(*args, **kwargs)
         self.client = AzureOpenAI(
-            api_key=self.token,
-            azure_endpoint=endpoint,
-            api_version=api_version
+            api_key=self.token, azure_endpoint=endpoint, api_version=api_version
         )
 
     def prompt(self, prompt, stdin):
@@ -67,5 +66,3 @@ class Client(BaseBackend):
         )
 
         return (get_exit_code(response), response)
-
-

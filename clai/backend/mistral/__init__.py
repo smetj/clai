@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from clai.tools import get_exit_code
 from clai.backend.openai import RESPONSE_FORMAT
 
+
 class Client(BaseBackend):
 
     def __init__(self, system, *args, **kwargs):
@@ -56,7 +57,8 @@ class Client(BaseBackend):
         messages = build_messages(
             max_tokens=self.max_tokens,
             model=self.model,
-            system=self.system + "Return the answer(field: answer, type bool) and a short and concise reason (field: reason, type: bool) in a single line JSON object.",
+            system=self.system
+            + "Return the answer(field: answer, type bool) and a short and concise reason (field: reason, type: bool) in a single line JSON object.",
             prompts=[prompt],
             stdin=stdin,
         )
@@ -69,7 +71,7 @@ class Client(BaseBackend):
                 messages=messages,
                 model=self.model,
                 temperature=self.temperature,
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
             .choices[0]
             .message.content

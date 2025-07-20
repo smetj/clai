@@ -169,7 +169,7 @@ def parse_arguments():
     parser_prompt.add_argument(
         "prompt",
         type=str,
-        nargs='?',
+        nargs="?",
         default="",
         help="The LLM prompt to execute.",
     )
@@ -182,7 +182,7 @@ def parse_arguments():
     bool_prompt.add_argument(
         "prompt",
         type=str,
-        nargs='?',
+        nargs="?",
         default="",
         help="The LLM prompt to execute.",
     )
@@ -195,7 +195,7 @@ def parse_arguments():
     structured_prompt.add_argument(
         "--prompt",
         type=str,
-        nargs='?',
+        nargs="?",
         default="",
         help="The LLM prompt to execute.",
     )
