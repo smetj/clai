@@ -14,6 +14,8 @@ from clai.backend.openai.tools import build_messages
 from clai.prompts import BOOL_PROMPT
 from clai.tools import get_exit_code
 from openai import OpenAI as _OpenAI
+import jsonschema
+import json
 
 RESPONSE_FORMAT = {
     "type": "json_schema",
@@ -122,3 +124,43 @@ class Client(BaseBackend):
         )
 
         return (get_exit_code(response), response)
+
+    def structured(self, prompt, stdin, schema):
+
+        ValidatorClass = jsonschema.validators.validator_for(schema)
+        with open(schema) as schema_fh:
+            schema = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "clai",
+                    "schema": json.load(schema_fh),
+                    "strict": True,
+                },
+            }
+
+        try:
+            ValidatorClass.check_schema(schema["json_schema"])
+        except jsonschema.exceptions.SchemaError as e:
+            print("❌ Invalid JSON Schema:", e)
+            sys.exit(1)
+
+        messages = build_messages(
+            max_tokens=self.max_tokens,
+            model=self.model,
+            system=self.system,
+            prompts=[prompt],
+            stdin=stdin,
+        )
+        if self.debug:
+            print(messages)
+
+        return (
+            self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=self.temperature,
+                response_format=schema,
+            )
+            .choices[0]
+            .message.content
+        )
