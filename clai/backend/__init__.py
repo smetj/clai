@@ -41,36 +41,10 @@ class BaseBackend:
         self.debug = debug
 
     def bool_prompt(self, prompt: str, stdin: Callable[[], Iterable[str]]) -> NoReturn:
-        """
-        Placeholder for boolean prompt interface to be implemented by subclasses.
-
-        Args:
-            prompt (str): Prompt text.
-            stdin (callable): Function yielding additional stdin lines.
-
-        Raises:
-            NotImplementedError: Always, to indicate missing implementation.
-        """
-        raise NotImplemented("Command not Implemented. Try another backend.")
+        raise NotImplementedError("Command not Implemented. Try another backend.")
 
     def prompt(self, prompt: str, stdin: Callable[[], Iterable[str]]) -> NoReturn:
-        """
-        Placeholder for free-text prompt interface to be implemented by subclasses.
-
-        Args:
-            prompt (str): Prompt text.
-            stdin (callable): Function yielding additional stdin lines.
-
-        Raises:
-            NotImplementedError: Always, to indicate missing implementation.
-        """
-        raise NotImplemented("Command not Implemented. Try another backend.")
+        raise NotImplementedError("Command not Implemented. Try another backend.")
 
     def structured_prompt(self) -> NoReturn:
-        """
-        Placeholder for structured prompt interface to be implemented by subclasses.
-
-        Raises:
-            NotImplementedError: Always, to indicate missing implementation.
-        """
-        raise NotImplemented("Command not Implemented. Try another backend.")
+        raise NotImplementedError("Command not Implemented. Try another backend.")

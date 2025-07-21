@@ -12,11 +12,8 @@ from clai.backend import BaseBackend
 from clai.backend.mistral.tools import build_messages
 
 from mistralai import Mistral
-import re
 from clai.prompts import BOOL_PROMPT
 
-from mistralai.models import responseformat
-from pydantic import BaseModel
 from clai.tools import get_exit_code
 from clai.backend.openai import RESPONSE_FORMAT
 from typing import Any, Callable, Iterable, Tuple

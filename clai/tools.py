@@ -5,11 +5,10 @@
 import argparse
 import json
 import os
-import re
 import sys
 from collections import namedtuple
 from textwrap import dedent
-from typing import Any, Callable, Dict, Iterator, List
+from typing import Any, Dict, Iterator
 
 import yaml
 from clai.backend import SUPPORTED_BACKENDS
@@ -153,15 +152,10 @@ def get_backend_instance_config(
 def read_stdin() -> Iterator[str]:
     """
     Yield stripped lines from standard input if available.
-
-    Yields:
-        str: Stripped lines read from stdin when not connected to a terminal.
     """
     if not sys.stdin.isatty():
         for item in sys.stdin.readlines():
             yield item.lstrip().rstrip()
-    else:
-        return []
 
 
 def parse_arguments() -> argparse.Namespace:

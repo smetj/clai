@@ -1,5 +1,5 @@
 import tiktoken
-from typing import Callable, Dict, Iterable, List
+from typing import Callable, Iterable, List
 
 
 class ValidateTokenLength:
@@ -37,20 +37,7 @@ def build_messages(
     system: str,
     prompts: List[str],
     stdin: Callable[[], Iterable[str]],
-) -> List[Dict[str, str]]:
-    """
-    Construct a list of chat messages ensuring token length limits.
-
-    Args:
-        max_tokens (int): Maximum tokens allowed across all message content.
-        model (str): Model name to use for tokenization.
-        system (str): System prompt message.
-        prompts (list[str]): List of user prompt messages.
-        stdin (callable): Function that yields additional stdin lines.
-
-    Returns:
-        list[dict]: Messages formatted for the OpenAI chat API.
-    """
+) -> list[dict[str, str]]:
     messages = []
 
     vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)

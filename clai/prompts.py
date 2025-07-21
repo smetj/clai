@@ -1,7 +1,3 @@
-#
-#  prompts.py
-#
-
 BOOL_PROMPT = """
     Analyze the following statement or question without inferring missing
     information and provide a structured response containing two elements:
