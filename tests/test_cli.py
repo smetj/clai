@@ -95,3 +95,30 @@ def test_no_pipe_stdin_no_prompt():
     result = execute_command("clai --backend mistral bool")
     print(result)
     assert result["returncode"] == 1
+
+
+def test_structured_openai(tmp_path):
+    # Create a simple JSON schema file
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+            "foo": {"type": "string"},
+            "bar": {"type": "integer"},
+        },
+        "required": ["foo", "bar"],
+        "additionalProperties": False,
+    }
+    schema_path = tmp_path / "schema.json"
+    schema_path.write_text(json.dumps(schema))
+
+    # Use a prompt that should produce a valid response
+    result = execute_command(
+        f'clai --backend openai structured "Respond with foo=hello and bar=42" --schema {schema_path}'
+    )
+    # Should be valid JSON and match the schema
+    data = json.loads(result["stdout"])
+    assert isinstance(data, dict)
+    assert "foo" in data and "bar" in data
+    assert isinstance(data["foo"], str)
+    assert isinstance(data["bar"], int)
