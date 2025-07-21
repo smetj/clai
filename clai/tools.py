@@ -9,17 +9,39 @@ import re
 import sys
 from collections import namedtuple
 from textwrap import dedent
+from typing import Any, Callable, Dict, Iterator, List
 
 import yaml
 from clai.backend import SUPPORTED_BACKENDS
 from jsonschema import validate
 
 
-def cleanup(text):
+def cleanup(text: str) -> str:
+    """
+    Normalize the given multi-line text by dedenting and collapsing line breaks into spaces.
+
+    Args:
+        text (str): The text to clean up.
+
+    Returns:
+        str: The cleaned text.
+    """
     return dedent(text).replace("\n", " ")
 
 
-def validate_bool_response(response):
+def validate_bool_response(response: str) -> Dict[str, Any]:
+    """
+    Parse and validate a JSON-formatted boolean response against the expected schema.
+
+    Args:
+        response (str): The raw JSON string returned by the model.
+
+    Returns:
+        dict: The parsed JSON object containing 'reason' and 'answer'.
+
+    Exits:
+        Exits the process with code 3 if validation fails.
+    """
     try:
         json_response = json.loads(response)
         validate(
@@ -44,7 +66,16 @@ def validate_bool_response(response):
     return json_response
 
 
-def get_exit_code(response):
+def get_exit_code(response: str) -> int:
+    """
+    Determine the exit code based on the boolean answer field in the response.
+
+    Args:
+        response (str): The raw JSON string representing the structured response.
+
+    Returns:
+        int: Returns 0 if answer is True, 1 otherwise.
+    """
     json_response = validate_bool_response(response)
 
     if json_response["answer"]:
@@ -53,16 +84,39 @@ def get_exit_code(response):
         return 1
 
 
-def read_config(filename):
+def read_config(filename: str) -> dict[str, Any]:
     """
-    Reads the config file `filename`
+    Load a YAML configuration file from the given path.
+
+    Args:
+        filename (str): Path to the YAML config file (tilde-expansion supported).
+
+    Returns:
+        dict: Parsed configuration dictionary.
     """
 
     with open(os.path.expanduser(filename)) as filename_fh:
         return yaml.safe_load(filename_fh)
 
 
-def get_backend_instance_config(config, backend, instance):
+def get_backend_instance_config(
+    config: Dict[str, Any], backend: str, instance: str
+) -> Any:
+    """
+    Extract and resolve a specific backend instance configuration.
+
+    Args:
+        config (dict): Full configuration dictionary containing backend definitions.
+        backend (str): Name of the backend to use.
+        instance (str): Name of the backend instance to load.
+
+    Returns:
+        namedtuple: A BackendConfig namedtuple with the instance parameters.
+
+    Raises:
+        Exception: If the backend or instance is not defined, or referenced environment variables are missing.
+    """
+
     def backend_config_factory(data):
 
         nt = namedtuple("BackendConfig", data.keys())
@@ -96,8 +150,13 @@ def get_backend_instance_config(config, backend, instance):
     return backend_config_factory(backend_config)
 
 
-def read_stdin():
-    """Reads input from STDIN if available."""
+def read_stdin() -> Iterator[str]:
+    """
+    Yield stripped lines from standard input if available.
+
+    Yields:
+        str: Stripped lines read from stdin when not connected to a terminal.
+    """
     if not sys.stdin.isatty():
         for item in sys.stdin.readlines():
             yield item.lstrip().rstrip()
@@ -105,21 +164,31 @@ def read_stdin():
         return []
 
 
-def parse_arguments():
+def parse_arguments() -> argparse.Namespace:
+    """
+    Parse command-line arguments and return the populated namespace.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments.
+    """
+
     class EnvDefault(argparse.Action):
+        """
+        Argparse action to read default value from an environment variable if set.
+
+        Args:
+            envvar (str): Name of the environment variable to check.
+            required (bool): Whether the argument is required if no default is set.
+        """
+
         def __init__(self, envvar=None, required=True, default=None, **kwargs):
-            # Handle environment variable
             env_value = os.environ.get(envvar) if envvar else None
             if env_value is not None:
-                default = env_value  # Use envvar if available
+                default = env_value
 
-            # Update kwargs for argparse
             kwargs["default"] = default
-            kwargs["required"] = (
-                required and default is None
-            )  # Required only if no default
+            kwargs["required"] = required and default is None
 
-            # Store the environment variable name for debugging
             self.envvar = envvar
             super().__init__(**kwargs)
 

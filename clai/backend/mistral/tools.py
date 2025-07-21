@@ -1,14 +1,40 @@
 from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
+from typing import Callable, Dict, Iterable, List
 
 
 class ValidateTokenLength:
-    def __init__(self, model, max_tokens):
+    """
+    Track and enforce token length limits for Mistral model prompts.
+
+    Attributes:
+        tokenizer: The Mistral tokenizer instance.
+        total_tokens (int): Running total of token count.
+        max_tokens (int): Maximum allowed tokens.
+    """
+
+    def __init__(self, model: str, max_tokens: int) -> None:
+        """
+        Initialize the token length validator.
+
+        Args:
+            model (str): Model name (unused, for interface consistency).
+            max_tokens (int): Maximum number of tokens allowed.
+        """
         self.tokenizer = MistralTokenizer.v3()
 
         self.total_tokens = 0
         self.max_tokens = max_tokens
 
-    def add(self, data):
+    def add(self, data: str) -> None:
+        """
+        Add the token count of data to the running total and raise if limit exceeded.
+
+        Args:
+            data (str): Text to tokenize and count.
+
+        Raises:
+            Exception: If total token count exceeds max_tokens.
+        """
         self.total_tokens += len(
             self.tokenizer.instruct_tokenizer.tokenizer.encode(
                 data, bos=False, eos=False
@@ -18,7 +44,26 @@ class ValidateTokenLength:
             raise Exception(f"Total input exceeds {self.total_tokens} tokens.")
 
 
-def build_messages(max_tokens, model, system, prompts, stdin):
+def build_messages(
+    max_tokens: int,
+    model: str,
+    system: str,
+    prompts: List[str],
+    stdin: Callable[[], Iterable[str]],
+) -> List[Dict[str, str]]:
+    """
+    Construct a list of chat messages ensuring token length limits.
+
+    Args:
+        max_tokens (int): Maximum tokens allowed across all message content.
+        model (str): Model name to use for interface consistency.
+        system (str): System prompt message.
+        prompts (list[str]): List of user prompt messages.
+        stdin (callable): Function that yields additional stdin lines.
+
+    Returns:
+        list[dict]: Messages formatted for the Mistral chat API.
+    """
     messages = []
 
     vtl = ValidateTokenLength(model=model, max_tokens=max_tokens)
