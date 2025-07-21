@@ -1,6 +1,7 @@
 ## What
 
-This pull request refactors the codebase to remove redundant comments, unused imports, and simplifies code across the `clai` project files. The following improvements were made:
+This pull request refactors the codebase to remove redundant comments, unused imports, and simplifies code across the `clai` project files.
+
 - Removed unused imports and unnecessary docstrings.
 - Simplified exception handling and removed unreachable code.
 - Cleaned up argument parsing and configuration loading logic.
