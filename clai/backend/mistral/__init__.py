@@ -90,8 +90,7 @@ class Client(BaseBackend):
         messages = build_messages(
             max_tokens=self.max_tokens,
             model=self.model,
-            system=self.system
-            + "Return the answer(field: answer, type bool) and a short and concise reason (field: reason, type: bool) in a single line JSON object.",
+            system=self.system + BOOL_PROMPT,
             prompts=[prompt],
             stdin=stdin,
         )
