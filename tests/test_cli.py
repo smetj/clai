@@ -32,14 +32,14 @@ def execute_command(command):
 
 def test_openai():
     result = execute_command(
-        'clai --backend openai --prompt "say hello in lowercase and nothing more not even punctuation."'
+        'clai --backend openai prompt "say hello in lowercase and nothing more not even punctuation."'
     )
     assert result["stdout"] == "hello"
 
 
 def test_openai_bool():
     result = execute_command(
-        'clai --backend openai --prompt "mixing black and white yields grey" --bool'
+        'clai --backend openai bool "mixing black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -47,14 +47,14 @@ def test_openai_bool():
 
 def test_azure_openai():
     result = execute_command(
-        'clai --backend azure_openai --prompt "say hello in lowercase and nothing more not even punctuation."'
+        'clai --backend azure_openai prompt "say hello in lowercase and nothing more not even punctuation."'
     )
     assert result["stdout"] == "hello"
 
 
 def test_azure_openai_bool():
     result = execute_command(
-        'clai --backend azure_openai --prompt "mixing black and white yields grey" --bool'
+        'clai --backend azure_openai bool "mixing black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -62,14 +62,14 @@ def test_azure_openai_bool():
 
 def test_mistral():
     result = execute_command(
-        'clai --backend mistral --prompt "say hello in lowercase and nothing more not even punctuation."'
+        'clai --backend mistral prompt "say hello in lowercase and nothing more not even punctuation."'
     )
     assert result["stdout"] == "hello"
 
 
 def test_mistral_bool():
     result = execute_command(
-        'clai --backend mistral --prompt "mixing black and white yields grey" --bool'
+        'clai --backend mistral bool "mixing black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -77,7 +77,7 @@ def test_mistral_bool():
 
 def test_pipe_stdin():
     result = execute_command(
-        'echo "black and white" | clai --backend mistral --prompt "mixing these colors yields grey." --bool'
+        'echo "black and white" | clai --backend mistral bool "mixing these colors yields grey."'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -85,13 +85,13 @@ def test_pipe_stdin():
 
 def test_pipe_stdin_no_prompt():
     result = execute_command(
-        'echo "Mixing black and white yields grey." | clai --backend mistral --bool'
+        'echo "Mixing black and white yields grey." | clai --backend mistral bool'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
 
 
 def test_no_pipe_stdin_no_prompt():
-    result = execute_command("clai --backend mistral")
+    result = execute_command("clai --backend mistral bool")
     print(result)
     assert result["returncode"] == 1

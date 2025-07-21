@@ -86,26 +86,39 @@ this use.
 
 ## Usage
 
-The CLI has a number of conveniences built-in.
+The CLI provides several subcommands for different prompt types:
 
-### STDIN reading
+### Basic prompt
 
-STDIN input is concatenated after the `--prompt` value:
+To generate a plain, unstructured response from the LLM:
 
+```bash
+clai --config config.yaml --backend openai --instance default prompt "Explain why the sky is blue."
 ```
-cat script.py | clai --prompt "Explain why this code produces the following error: can only concatenate tuple (not str) to tuple"
+
+You can also pipe input from STDIN, which will be appended after the prompt:
+
+```bash
+cat script.py | clai --config config.yaml --backend openai --instance default prompt "Explain why this code produces the following error: can only concatenate tuple (not str) to tuple"
 ```
 
-### bool
+### Boolean prompt
 
-Enabling `--bool` ensures that the LLM returns a JSON formatted response that
-includes a boolean `answer` of either `true` or `false` and the `reason` for
-that conclusion. Additionally, the exit code will be `0` for true and `1` for
-false.
+To ask a true/false question and receive a structured JSON response (with exit code 0 for true, 1 for false):
+
+```bash
+clai --config config.yaml --backend openai --instance default bool "Mixing these colors yields orange."
+```
+
+Or with STDIN:
+
+```bash
+echo "red and yellow" | clai --config config.yaml --backend openai --instance default bool "Mixing these colors yields orange."
+```
 
 **false example:**
 ```bash
-$ echo "red and blue" | clai --bool --prompt "Mixing these colors yields orange."
+$ echo "red and blue" | clai --config config.yaml --backend openai --instance default bool "Mixing these colors yields orange."
 {"answer":false,"reason":"Mixing red and blue yields purple, not orange. The context was sufficient as it clearly stated the colors to be mixed."}
 $ echo $?
 1
@@ -113,10 +126,21 @@ $ echo $?
 
 **true example:**
 ```bash
-$ echo "red and yellow" | clai --bool --prompt "Mixing these colors yields orange."                
+$ echo "red and yellow" | clai --config config.yaml --backend openai --instance default bool "Mixing these colors yields orange."
 {"answer":true,"reason":"Mixing red and yellow colors indeed yields orange, which is a basic principle of color theory. The context provided is sufficient as it directly states the colors involved an the resulting color."}
 $ echo $?
 0
+```
+
+### Environment variable support
+
+You can set `CLAI_CONFIG`, `CLAI_BACKEND`, and `CLAI_INSTANCE` as environment variables to avoid passing them as CLI arguments each time.
+
+```bash
+export CLAI_CONFIG=~/myconfig.yaml
+export CLAI_BACKEND=openai
+export CLAI_INSTANCE=default
+clai prompt "Say hello!"
 ```
 
 ## Backends
