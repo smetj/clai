@@ -257,5 +257,23 @@ def parse_arguments() -> argparse.Namespace:
         help="The LLM prompt to execute.",
     )
 
+    # structured prompt
+    structured_prompt = subparsers.add_parser(
+        "structured",
+        help="Generate a structured response from the LLM using a provided JSON schema.",
+    )
+    structured_prompt.add_argument(
+        "prompt",
+        type=str,
+        nargs="?",
+        default="",
+        help="The LLM prompt to execute.",
+    )
+    structured_prompt.add_argument(
+        "--schema",
+        type=str,
+        required=True,
+        help="Path to the JSON schema file to use for the structured response.",
+    )
 
     return main.parse_args()
