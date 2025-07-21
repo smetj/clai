@@ -34,25 +34,23 @@ def main() -> None:
         match args.command:
             case "prompt":
                 prompt_str = args.prompt
-                if not prompt_str:
-                    # If no prompt argument, try to read from stdin
-                    stdin_lines = list(read_stdin())
+                stdin_lines = list(read_stdin())
+                if not prompt_str and stdin_lines:
                     prompt_str = "".join(stdin_lines).strip()
-                    if not prompt_str:
-                        print("No prompt provided via argument or stdin.")
-                        sys.exit(1)
-                print(client.prompt(prompt=prompt_str, stdin=read_stdin))
+                if not prompt_str:
+                    print("No prompt provided via argument or stdin.")
+                    sys.exit(1)
+                print(client.prompt(prompt=prompt_str, stdin=lambda: iter(stdin_lines)))
             case "bool":
                 prompt_str = args.prompt
-                if not prompt_str:
-                    # If no prompt argument, try to read from stdin
-                    stdin_lines = list(read_stdin())
+                stdin_lines = list(read_stdin())
+                if not prompt_str and stdin_lines:
                     prompt_str = "".join(stdin_lines).strip()
-                    if not prompt_str:
-                        print("No prompt provided via argument or stdin.")
-                        sys.exit(1)
+                if not prompt_str:
+                    print("No prompt provided via argument or stdin.")
+                    sys.exit(1)
                 exit_code, response = client.bool_prompt(
-                    prompt=prompt_str, stdin=read_stdin
+                    prompt=prompt_str, stdin=lambda: iter(stdin_lines)
                 )
                 print(response)
                 sys.exit(exit_code)
