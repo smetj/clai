@@ -16,6 +16,7 @@ from clai.tools import get_exit_code
 from openai import OpenAI as _OpenAI
 import jsonschema
 import json
+import sys
 
 RESPONSE_FORMAT = {
     "type": "json_schema",
