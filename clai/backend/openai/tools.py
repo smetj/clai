@@ -1,3 +1,10 @@
+# MIT License
+#
+# Copyright (c) 2025 Jelle Smet
+#
+# This software is released under the MIT License.
+# See the LICENSE file in the project root for more information.
+
 import tiktoken
 from typing import Callable, Iterable, List
 
