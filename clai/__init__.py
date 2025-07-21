@@ -54,6 +54,24 @@ def main() -> None:
                 )
                 print(response)
                 sys.exit(exit_code)
+            case "structured":
+                prompt_str = args.prompt
+                stdin_lines = list(read_stdin())
+                if not prompt_str and stdin_lines:
+                    prompt_str = "".join(stdin_lines).strip()
+                if not prompt_str:
+                    print("No prompt provided via argument or stdin.")
+                    sys.exit(1)
+                if not hasattr(client, "structured"):
+                    print("Structured prompt is not supported by this backend.")
+                    sys.exit(2)
+                print(
+                    client.structured(
+                        prompt=prompt_str,
+                        stdin=lambda: iter(stdin_lines),
+                        schema=args.schema,
+                    )
+                )
     except Exception as err:
         print(f"Failed to execute command. Reason: {err}")
         sys.exit(1)

@@ -15,6 +15,9 @@ from clai.tools import get_exit_code
 from openai import AzureOpenAI
 from typing import Any, Callable, Iterable, Tuple
 from clai.backend.openai import RESPONSE_FORMAT
+import jsonschema
+import json
+import sys
 
 
 class Client(BaseBackend):
@@ -119,3 +122,61 @@ class Client(BaseBackend):
         )
 
         return (get_exit_code(response), response)
+
+    def structured(
+        self,
+        prompt: str,
+        stdin: Callable[[], Iterable[str]],
+        schema: str,
+    ) -> str:
+        """
+        Generate a structured response from the LLM using a provided JSON schema.
+
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+            stdin (Callable[[], Iterable[str]]): Function yielding additional stdin lines.
+            schema (str): Path to the JSON schema file to use for the structured response.
+
+        Returns:
+            str: The response content from the model.
+
+        Raises:
+            SystemExit: If the provided schema is invalid.
+        """
+        ValidatorClass = jsonschema.validators.validator_for(schema)
+        with open(schema) as schema_fh:
+            schema_obj = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "clai",
+                    "schema": json.load(schema_fh),
+                    "strict": True,
+                },
+            }
+
+        try:
+            ValidatorClass.check_schema(schema_obj["json_schema"])
+        except jsonschema.exceptions.SchemaError as e:
+            print("❌ Invalid JSON Schema:", e)
+            sys.exit(1)
+
+        messages = build_messages(
+            max_tokens=self.max_tokens,
+            model=self.token_model,
+            system=self.system,
+            prompts=[prompt],
+            stdin=stdin,
+        )
+        if self.debug:
+            print(messages)
+
+        return (
+            self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=self.temperature,
+                response_format=schema_obj,
+            )
+            .choices[0]
+            .message.content
+        )

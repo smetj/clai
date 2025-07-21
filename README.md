@@ -132,6 +132,42 @@ $ echo $?
 0
 ```
 
+### Structured prompt
+
+To generate a structured response from the LLM using a provided JSON schema:
+
+```bash
+clai --config config.yaml --backend openai --instance default structured "Respond with foo=hello and bar=42" --schema path/to/schema.json
+```
+
+- The `--schema` argument must point to a valid JSON schema file.
+- The model will be instructed to return a response that matches the schema.
+- The output will be a JSON object conforming to your schema.
+
+**Example schema (`schema.json`):**
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "foo": {"type": "string"},
+    "bar": {"type": "integer"}
+  },
+  "required": ["foo", "bar"],
+  "additionalProperties": false
+}
+```
+
+**Example usage:**
+```bash
+clai --config config.yaml --backend openai --instance default structured "Respond with foo=hello and bar=42" --schema schema.json
+```
+
+**Example output:**
+```json
+{"foo": "hello", "bar": 42}
+```
+
 ### Environment variable support
 
 You can set `CLAI_CONFIG`, `CLAI_BACKEND`, and `CLAI_INSTANCE` as environment variables to avoid passing them as CLI arguments each time.
