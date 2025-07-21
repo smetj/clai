@@ -125,11 +125,29 @@ class Client(BaseBackend):
 
         return (get_exit_code(response), response)
 
-    def structured(self, prompt, stdin, schema):
+    def structured(
+        self,
+        prompt: str,
+        stdin: Callable[[], Iterable[str]],
+        schema: str,
+    ) -> str:
+        """
+        Generate a structured response from the LLM using a provided JSON schema.
 
+        Args:
+            prompt (str): The user prompt to send to the LLM.
+            stdin (Callable[[], Iterable[str]]): Function yielding additional stdin lines.
+            schema (str): Path to the JSON schema file to use for the structured response.
+
+        Returns:
+            str: The response content from the model.
+
+        Raises:
+            SystemExit: If the provided schema is invalid.
+        """
         ValidatorClass = jsonschema.validators.validator_for(schema)
         with open(schema) as schema_fh:
-            schema = {
+            schema_obj = {
                 "type": "json_schema",
                 "json_schema": {
                     "name": "clai",
@@ -139,7 +157,7 @@ class Client(BaseBackend):
             }
 
         try:
-            ValidatorClass.check_schema(schema["json_schema"])
+            ValidatorClass.check_schema(schema_obj["json_schema"])
         except jsonschema.exceptions.SchemaError as e:
             print("❌ Invalid JSON Schema:", e)
             sys.exit(1)
@@ -159,7 +177,7 @@ class Client(BaseBackend):
                 messages=messages,
                 model=self.model,
                 temperature=self.temperature,
-                response_format=schema,
+                response_format=schema_obj,
             )
             .choices[0]
             .message.content
