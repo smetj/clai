@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import re
 from collections import namedtuple
 from textwrap import dedent
 from typing import Any, Dict, Iterator
