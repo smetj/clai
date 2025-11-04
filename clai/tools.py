@@ -124,7 +124,6 @@ def get_backend_instance_config(
     """
 
     def backend_config_factory(data):
-
         nt = namedtuple("BackendConfig", data.keys())
 
         return nt(**data)

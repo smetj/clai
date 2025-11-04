@@ -8,15 +8,13 @@
 # mistral.py
 #
 
+from typing import Any, Callable, Iterable, Tuple
+
 from clai.backend import BaseBackend
 from clai.backend.mistral.tools import build_messages
-
-from mistralai import Mistral
 from clai.prompts import BOOL_PROMPT
-
 from clai.tools import get_exit_code
-from clai.backend.openai import RESPONSE_FORMAT
-from typing import Any, Callable, Iterable, Tuple
+from mistralai import Mistral
 
 
 class Client(BaseBackend):

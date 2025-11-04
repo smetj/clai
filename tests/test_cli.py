@@ -39,7 +39,7 @@ def test_openai():
 
 def test_openai_bool():
     result = execute_command(
-        'clai --backend openai bool "mixing black and white yields grey"'
+        'clai --backend openai bool "mixing pigments black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -54,7 +54,7 @@ def test_azure_openai():
 
 def test_azure_openai_bool():
     result = execute_command(
-        'clai --backend azure_openai bool "mixing black and white yields grey"'
+        'clai --backend azure_openai bool "mixing pigments black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -69,7 +69,7 @@ def test_mistral():
 
 def test_mistral_bool():
     result = execute_command(
-        'clai --backend mistral bool "mixing black and white yields grey"'
+        'clai --backend mistral bool "mixing pigments black and white yields grey"'
     )
 
     assert json.loads(result["stdout"])["answer"] is True
@@ -85,7 +85,7 @@ def test_pipe_stdin():
 
 def test_pipe_stdin_no_prompt():
     result = execute_command(
-        'echo "Mixing black and white yields grey." | clai --backend mistral bool'
+        'echo "Mixing pigments black and white yields grey." | clai --backend mistral bool'
     )
 
     assert json.loads(result["stdout"])["answer"] is True

@@ -5,9 +5,9 @@
 # This software is released under the MIT License.
 # See the LICENSE file in the project root for more information.
 
-SUPPORTED_BACKENDS = ["azure_openai", "openai", "mistral"]
+from typing import Callable, Iterable, NoReturn, final
 
-from typing import Any, Callable, Iterable, NoReturn, final
+SUPPORTED_BACKENDS = ["azure_openai", "openai", "mistral"]
 
 
 @final
