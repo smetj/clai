@@ -48,6 +48,8 @@ class Client(BaseBackend):
         *args, **kwargs: Additional parameters for BaseBackend.
     """
 
+    supports_reasoning = True
+
     def __init__(self, system: str, *args: Any, **kwargs: Any) -> None:
         """
         Initialize the OpenAI client with system prompt and credentials.

@@ -32,6 +32,8 @@ class Client(BaseBackend):
         *args, **kwargs: Additional parameters for BaseBackend.
     """
 
+    supports_reasoning = True
+
     def __init__(
         self,
         endpoint: str,
