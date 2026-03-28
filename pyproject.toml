@@ -1,6 +1,6 @@
 [project]
 name = "clai"
-version = "0.1.0"
+version = "0.4.0"
 description = "A CLI tool that facilitates decision-making, automation, and problem-solving through the use of LLM AI."
 authors = [
     {name = "Jelle Smet", email = "development@smetj.net"},
