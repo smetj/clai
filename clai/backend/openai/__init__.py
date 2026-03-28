@@ -7,20 +7,21 @@
 #
 #  backends.py
 #
-from typing import Any, Callable, Iterable, Tuple
-
-from clai.backend import BaseBackend
-from clai.backend.openai.tools import build_messages
-from clai.prompts import BOOL_PROMPT
-from clai.tools import get_exit_code
-from openai import OpenAI as _OpenAI
-import jsonschema
 import json
 import sys
+from typing import Any, Callable, Iterable, Tuple
+
+import jsonschema
+from openai import OpenAI as _OpenAI
+
+from clai.backend import BaseBackend
+from clai.backend.openai.tools import ValidateTokenLength, get_output_text
+from clai.prompts import BOOL_PROMPT
+from clai.tools import get_exit_code
 
 RESPONSE_FORMAT = {
-    "type": "json_schema",
-    "json_schema": {
+    "format": {
+        "type": "json_schema",
         "name": "true_false",
         "schema": {
             "type": "object",
@@ -34,7 +35,7 @@ RESPONSE_FORMAT = {
             "additionalProperties": False,
         },
         "strict": True,
-    },
+    }
 }
 
 
@@ -58,6 +59,14 @@ class Client(BaseBackend):
         super().__init__(*args, **kwargs)
         self.client = _OpenAI(api_key=self.token)
 
+        self.vtl = ValidateTokenLength(model=self.model, max_tokens=self.max_tokens)
+
+    def _reasoning(self) -> dict[str, str] | None:
+        if self.reasoning is None:
+            return None
+
+        return {"effort": self.reasoning}
+
     def prompt(self, prompt: str, stdin: Callable[[], Iterable[str]]) -> str | None:
         """
         Send a user prompt to OpenAI and return the response content.
@@ -69,25 +78,27 @@ class Client(BaseBackend):
         Returns:
             str: The response content from the model.
         """
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.model,
-            system=self.system,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
 
-        return (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-            )
-            .choices[0]
-            .message.content
-        )
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system)]
+
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        return get_output_text(self.client.responses.create(**request))
 
     def bool_prompt(
         self, prompt: str, stdin: Callable[[], Iterable[str]]
@@ -103,26 +114,27 @@ class Client(BaseBackend):
             tuple[int, str]: A tuple of exit code and raw JSON response.
         """
 
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.model,
-            system=self.system + BOOL_PROMPT,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system + BOOL_PROMPT)]
 
-        response = (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                response_format=RESPONSE_FORMAT,
-            )
-            .choices[0]
-            .message.content
-        )
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+            "text": RESPONSE_FORMAT,
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        response = get_output_text(self.client.responses.create(**request))
 
         return (get_exit_code(response), response)
 
@@ -146,7 +158,7 @@ class Client(BaseBackend):
         Raises:
             SystemExit: If the provided schema is invalid.
         """
-        ValidatorClass = jsonschema.validators.validator_for(schema)
+        validator_cls = jsonschema.validators.validator_for(schema)
         with open(schema) as schema_fh:
             schema_obj = {
                 "type": "json_schema",
@@ -158,28 +170,29 @@ class Client(BaseBackend):
             }
 
         try:
-            ValidatorClass.check_schema(schema_obj["json_schema"])
+            validator_cls.check_schema(schema_obj["json_schema"])
         except jsonschema.exceptions.SchemaError as e:
             print("❌ Invalid JSON Schema:", e)
             sys.exit(1)
 
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.model,
-            system=self.system,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system)]
 
-        return (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                response_format=schema_obj,
-            )
-            .choices[0]
-            .message.content
-        )
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.model,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+            "text": schema_obj,
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        return get_output_text(self.client.responses.create(**request))

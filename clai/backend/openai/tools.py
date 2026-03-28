@@ -5,8 +5,51 @@
 # This software is released under the MIT License.
 # See the LICENSE file in the project root for more information.
 
-import tiktoken
 from typing import Callable, Iterable, List
+
+import tiktoken
+
+
+def get_tokenizer(model: str) -> tiktoken.Encoding:
+    try:
+        return tiktoken.encoding_for_model(model)
+    except KeyError:
+        # Newer model variants like `gpt-5.4` may not be recognized yet by
+        # the installed `tiktoken`, while their family alias is.
+        family_aliases = (
+            "gpt-5",
+            "gpt-4.1",
+            "gpt-4o",
+            "o1",
+            "o3",
+            "o4",
+        )
+        for family_alias in family_aliases:
+            if model == family_alias or model.startswith(f"{family_alias}."):
+                return tiktoken.encoding_for_model(family_alias)
+
+        raise
+
+
+def get_output_text(response) -> str:
+    texts = []
+
+    for output in response.output:
+        if output.type != "message":
+            continue
+
+        message_text = []
+        for content in output.content:
+            if content.type == "output_text":
+                message_text.append(content.text)
+
+        if message_text:
+            texts.append("".join(message_text))
+
+    if not texts:
+        return ""
+
+    return texts[-1]
 
 
 class ValidateTokenLength:
@@ -18,7 +61,7 @@ class ValidateTokenLength:
             model (str): Model name to select the tokenizer.
             max_tokens (int): Maximum number of tokens allowed.
         """
-        self.tokenizer = tiktoken.encoding_for_model(model)
+        self.tokenizer = get_tokenizer(model)
 
         self.total_tokens = 0
         self.max_tokens = max_tokens
@@ -36,6 +79,7 @@ class ValidateTokenLength:
         self.total_tokens += len(self.tokenizer.encode(data))
         if self.total_tokens > self.max_tokens:
             raise Exception(f"Total input exceeds {self.total_tokens} tokens.")
+        return data
 
 
 def build_messages(
