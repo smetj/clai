@@ -31,21 +31,22 @@ def main() -> None:
         )
         client = Client(**backend_config._asdict() | {"debug": args.debug})
 
+        def prepare_prompt_and_stdin(prompt: str) -> tuple[str, list[str]]:
+            stdin_lines = list(read_stdin())
+            if not prompt and stdin_lines:
+                return "".join(stdin_lines).strip(), []
+
+            return prompt, stdin_lines
+
         match args.command:
             case "prompt":
-                prompt_str = args.prompt
-                stdin_lines = list(read_stdin())
-                if not prompt_str and stdin_lines:
-                    prompt_str = "".join(stdin_lines).strip()
+                prompt_str, stdin_lines = prepare_prompt_and_stdin(args.prompt)
                 if not prompt_str:
                     print("No prompt provided via argument or stdin.")
                     sys.exit(1)
                 print(client.prompt(prompt=prompt_str, stdin=lambda: iter(stdin_lines)))
             case "bool":
-                prompt_str = args.prompt
-                stdin_lines = list(read_stdin())
-                if not prompt_str and stdin_lines:
-                    prompt_str = "".join(stdin_lines).strip()
+                prompt_str, stdin_lines = prepare_prompt_and_stdin(args.prompt)
                 if not prompt_str:
                     print("No prompt provided via argument or stdin.")
                     sys.exit(1)
@@ -55,10 +56,7 @@ def main() -> None:
                 print(response)
                 sys.exit(exit_code)
             case "structured":
-                prompt_str = args.prompt
-                stdin_lines = list(read_stdin())
-                if not prompt_str and stdin_lines:
-                    prompt_str = "".join(stdin_lines).strip()
+                prompt_str, stdin_lines = prepare_prompt_and_stdin(args.prompt)
                 if not prompt_str:
                     print("No prompt provided via argument or stdin.")
                     sys.exit(1)
