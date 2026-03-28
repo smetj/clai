@@ -1,8 +1,9 @@
 import json
+import os
 import subprocess
 
 
-def execute_command(command):
+def execute_command(command, env=None):
     """
     Executes a CLI command and returns the output and error (if any).
 
@@ -18,6 +19,7 @@ def execute_command(command):
             shell=True,  # Enables executing shell commands
             capture_output=True,  # Captures both stdout and stderr
             text=True,  # Returns output as a string
+            env=(os.environ | {"PYTHONPATH": os.getcwd()}) | (env or {}),
         )
 
         return {
@@ -98,6 +100,40 @@ def test_no_pipe_stdin_no_prompt():
 
 
 def test_structured_openai(tmp_path):
+    openai_pkg = tmp_path / "openai"
+    openai_pkg.mkdir()
+    (openai_pkg / "__init__.py").write_text(
+        """
+class _OutputText:
+    type = "output_text"
+
+    def __init__(self, text):
+        self.text = text
+
+
+class _Message:
+    type = "message"
+
+    def __init__(self, text):
+        self.content = [_OutputText(text)]
+
+
+class _Response:
+    def __init__(self, text):
+        self.output = [_Message(text)]
+
+
+class _Responses:
+    def create(self, **kwargs):
+        return _Response('{"foo":"hello","bar":42}')
+
+
+class OpenAI:
+    def __init__(self, api_key=None):
+        self.responses = _Responses()
+""".lstrip()
+    )
+
     # Create a simple JSON schema file
     schema = {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -114,7 +150,8 @@ def test_structured_openai(tmp_path):
 
     # Use a prompt that should produce a valid response
     result = execute_command(
-        f'clai --backend openai structured "Respond with foo=hello and bar=42" --schema {schema_path}'
+        f'clai --backend openai structured "Respond with foo=hello and bar=42" --schema {schema_path}',
+        env={"PYTHONPATH": f"{tmp_path}:{os.getcwd()}"},
     )
     # Should be valid JSON and match the schema
     data = json.loads(result["stdout"])
