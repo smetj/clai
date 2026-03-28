@@ -5,8 +5,20 @@
 # This software is released under the MIT License.
 # See the LICENSE file in the project root for more information.
 
-from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
 from typing import Callable, Iterable, List
+
+from mistral_common.tokens.tokenizers.mistral import MistralTokenizer
+
+
+MISTRAL_TOKENIZER = MistralTokenizer.v3()
+
+
+def get_token_length(data: str) -> int:
+    return len(
+        MISTRAL_TOKENIZER.instruct_tokenizer.tokenizer.encode(
+            data, bos=False, eos=False
+        )
+    )
 
 
 class ValidateTokenLength:
@@ -20,16 +32,11 @@ class ValidateTokenLength:
     """
 
     def __init__(self, model: str, max_tokens: int) -> None:
-        self.tokenizer = MistralTokenizer.v3()
         self.total_tokens = 0
         self.max_tokens = max_tokens
 
     def add(self, data: str) -> None:
-        self.total_tokens += len(
-            self.tokenizer.instruct_tokenizer.tokenizer.encode(
-                data, bos=False, eos=False
-            )
-        )
+        self.total_tokens += get_token_length(data)
         if self.total_tokens > self.max_tokens:
             raise Exception(f"Total input exceeds {self.total_tokens} tokens.")
 

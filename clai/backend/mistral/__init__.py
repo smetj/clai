@@ -14,7 +14,7 @@ from clai.backend import BaseBackend
 from clai.backend.mistral.tools import build_messages
 from clai.prompts import BOOL_PROMPT
 from clai.tools import get_exit_code
-from mistralai import Mistral
+from mistralai.client import Mistral
 
 
 class Client(BaseBackend):
