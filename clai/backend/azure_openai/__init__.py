@@ -7,17 +7,18 @@
 #
 #  azure_openai.py
 #
-
-from clai.backend import BaseBackend
-from clai.backend.openai.tools import build_messages
-from clai.prompts import BOOL_PROMPT
-from clai.tools import get_exit_code
-from openai import AzureOpenAI
-from typing import Any, Callable, Iterable, Tuple
-from clai.backend.openai import RESPONSE_FORMAT
-import jsonschema
 import json
 import sys
+from typing import Any, Callable, Iterable, Tuple
+
+import jsonschema
+from openai import OpenAI as _OpenAI
+
+from clai.backend import BaseBackend
+from clai.backend.openai import RESPONSE_FORMAT
+from clai.backend.openai.tools import ValidateTokenLength, get_output_text
+from clai.prompts import BOOL_PROMPT
+from clai.tools import get_exit_code
 
 
 class Client(BaseBackend):
@@ -26,7 +27,7 @@ class Client(BaseBackend):
 
     Args:
         endpoint (str): Azure endpoint URL.
-        api_version (str): Azure API version identifier.
+        deployment (str): Azure deployment name used for requests.
         system (str): System prompt message.
         *args, **kwargs: Additional parameters for BaseBackend.
     """
@@ -34,7 +35,7 @@ class Client(BaseBackend):
     def __init__(
         self,
         endpoint: str,
-        api_version: str,
+        deployment: str,
         system: str,
         *args: Any,
         **kwargs: Any,
@@ -44,15 +45,42 @@ class Client(BaseBackend):
 
         Args:
             endpoint (str): Azure endpoint URL.
-            api_version (str): Azure API version identifier.
+            deployment (str): Azure deployment name used for requests.
             system (str): System prompt message.
         """
         self.token_model = kwargs.pop("token_model", kwargs["model"])
         self.system = system
         super().__init__(*args, **kwargs)
-        self.client = AzureOpenAI(
-            api_key=self.token, azure_endpoint=endpoint, api_version=api_version
+        self.deployment = deployment
+        self.client = _OpenAI(
+            api_key=self.token,
+            base_url=self._get_base_url(endpoint),
         )
+        self.vtl = ValidateTokenLength(
+            model=self.token_model, max_tokens=self.max_tokens
+        )
+
+    def _reasoning(self) -> dict[str, str] | None:
+        if self.reasoning is None:
+            return None
+
+        return {"effort": self.reasoning}
+
+    @staticmethod
+    def _get_base_url(endpoint: str) -> str:
+        normalized_endpoint = endpoint.rstrip("/")
+        if ".openai.azure.com" not in normalized_endpoint:
+            raise ValueError(
+                "Azure OpenAI endpoint must end with `.openai.azure.com` when using the Responses API."
+            )
+
+        if normalized_endpoint.endswith("/openai/v1"):
+            return f"{normalized_endpoint}/"
+
+        if normalized_endpoint.endswith("/openai/v1/"):
+            return normalized_endpoint
+
+        return f"{normalized_endpoint}/openai/v1/"
 
     def prompt(self, prompt: str, stdin: Callable[[], Iterable[str]]) -> str:
         """
@@ -66,25 +94,26 @@ class Client(BaseBackend):
             str: The response content from the model.
         """
 
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.token_model,
-            system=self.system,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system)]
 
-        return (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-            )
-            .choices[0]
-            .message.content
-        )
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.deployment,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        return get_output_text(self.client.responses.create(**request))
 
     def bool_prompt(
         self, prompt: str, stdin: Callable[[], Iterable[str]]
@@ -100,26 +129,27 @@ class Client(BaseBackend):
             tuple[int, str]: A tuple of exit code and raw JSON response.
         """
 
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.token_model,
-            system=self.system + BOOL_PROMPT,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system + BOOL_PROMPT)]
 
-        response = (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                response_format=RESPONSE_FORMAT,
-            )
-            .choices[0]
-            .message.content
-        )
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.deployment,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+            "text": RESPONSE_FORMAT,
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        response = get_output_text(self.client.responses.create(**request))
 
         return (get_exit_code(response), response)
 
@@ -143,7 +173,7 @@ class Client(BaseBackend):
         Raises:
             SystemExit: If the provided schema is invalid.
         """
-        ValidatorClass = jsonschema.validators.validator_for(schema)
+        validator_cls = jsonschema.validators.validator_for(schema)
         with open(schema) as schema_fh:
             schema_obj = {
                 "type": "json_schema",
@@ -155,28 +185,29 @@ class Client(BaseBackend):
             }
 
         try:
-            ValidatorClass.check_schema(schema_obj["json_schema"])
+            validator_cls.check_schema(schema_obj["json_schema"])
         except jsonschema.exceptions.SchemaError as e:
             print("❌ Invalid JSON Schema:", e)
             sys.exit(1)
 
-        messages = build_messages(
-            max_tokens=self.max_tokens,
-            model=self.token_model,
-            system=self.system,
-            prompts=[prompt],
-            stdin=stdin,
-        )
-        if self.debug:
-            print(messages)
+        final_p = [self.vtl.add(prompt)]
+        final_i = [self.vtl.add(self.system)]
 
-        return (
-            self.client.chat.completions.create(
-                messages=messages,
-                model=self.model,
-                temperature=self.temperature,
-                response_format=schema_obj,
-            )
-            .choices[0]
-            .message.content
-        )
+        for line in stdin():
+            final_p.append(self.vtl.add(line))
+
+        if self.debug:
+            print("Instructions: ", final_i)
+            print("Prompt: ", final_p)
+
+        request = {
+            "model": self.deployment,
+            "temperature": self.temperature,
+            "instructions": "\n".join(final_i),
+            "input": "\n".join(final_p),
+            "text": schema_obj,
+        }
+        if self.reasoning is not None:
+            request["reasoning"] = self._reasoning()
+
+        return get_output_text(self.client.responses.create(**request))
